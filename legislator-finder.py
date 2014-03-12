@@ -8,7 +8,7 @@ import os
 import HTML
 
 # Create instance of FieldStorage 
-form = cgi.FieldStorage() 
+form = cgi.FieldStorage()
 
 # Get data from fields
 if form.getvalue('stateChoice'):
@@ -28,10 +28,10 @@ for stateDelMember in stateDel['objects']:
 	#Start with a blank list for the current member
 	singleMemberInfo = []
 	
-	#Concatenate title, firstname, land lastname to form name
-	title=stateDelMember['title']
-	firstName=stateDelMember['person']['firstname']
-	lastName=stateDelMember['person']['lastname']
+	#Concatenate title, firstname, and lastname to form name
+	title=stateDelMember['title'].encode("utf-8")
+	firstName=stateDelMember['person']['firstname'].encode("utf-8")
+	lastName=stateDelMember['person']['lastname'].encode("utf-8")
 	name=title+" "+firstName+" "+lastName
 	
 	#Convert the long party name to a party code (R, D, or I)

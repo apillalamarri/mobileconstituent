@@ -14,8 +14,9 @@ address=raw_input("Enter Your Address: ")
 #postData =  "{'address':'1263 Pacific Ave. Kansas City KS'}"
 postData =  "{'address':"+"'"+address+"'}"
 
+
 #Runs the CURL to the Civic API and sets the output as a dictionary
-key="AIzaSyCbfuei5igyBXzm2lUAid7Lt0sxIqhDBfY"
+key = ""
 c = pycurl.Curl()
 data = BytesIO()
 c.setopt(pycurl.URL, "https://www.googleapis.com/civicinfo/us_v1/representatives/lookup?key="+key)
@@ -32,72 +33,61 @@ repDict = json.loads(data.getvalue())
 Functions
 """
 
-#Checks the name of the office to filter for US House/Senate
-def checkName(name):
-	if "United States House of Representatives" in name:
-		return "USRep"
-	elif "United States Senate" in name:
-		return "USSen"
-	else:
-		return False
+#Checks if name of the office is at our desired level
+def checkName(officeName, level):
+	potusList = ["President"]
+	congressList =["United States House of Representatives", "United States Senate"]
+	governorList = ["Governor"]
+	stateLegList = ["State House", "State Senate"]
+	allNames = {}
+	allNames = {"potus":potusList,
+				"congress":congressList,
+				"governor":governorList,
+				"stateLeg":stateLegList}
+	for singleName in allNames[level]:
+		if singleName in officeName:
+			return True
+	return False
 
-#Gets us our shiz
-#def deets(electedIDs):
+def deets(officials,repDict):
+	"Get contact information for each elected official"
 	
+	def getSocialID(channels, media):
+		"Get the requested social network ID"
+		for channel in channels:
+			for k,v in channel.iteritems():
+				if v==media:
+					return channel.get("id","").encode('utf-8')
+				
+				
+	electeds=[]
+	for electedID,electedDict in repDict['officials'].iteritems():
+		for name, officialIDs in officials.iteritems():
+			if electedID in officialIDs:
+				singleElected=[]
+				singleElected.append(name.encode('utf-8'))
+				singleElected.append(electedDict.get('name',"").encode('utf-8'))
+				singleElected.append(electedDict.get('photoUrl',"").encode('utf-8'))
+				singleElected.append(electedDict.get('party',"").encode('utf-8'))
+				singleElected.append(electedDict.get('phones',"")[0].encode('utf-8'))
+				singleElected.append(electedDict.get('urls',"")[0].encode('utf-8'))		
+				singleElected.append(getSocialID(electedDict.get("channels",[]),"Facebook"))
+				singleElected.append(getSocialID(electedDict.get("channels",[]),"Twitter"))
+				electeds.append(singleElected)
+	return electeds
 	
 ################################################################
-
-
-"""
-#Filters the scope out of division and gets scope[officeIds]
-officeIDs= []
-for division,divDict in repDict['divisions'].iteritems():
-	if divDict.get('scope', 0) in ['congressional','statewide']:
-		officeIDs=officeIDs + divDict.get('officeIds',[])	
-
-#Filters the office id out of offices and gets offices[officialIds] 
-officialIDs= []
-for officesID,officesDict in repDict['offices'].iteritems():
-	#print officesID
-	if officesID in officeIDs and checkName(officesDict.get('name')):
-		officialIDs=officialIDs + officesDict.get('officialIds',[])		
-
-#Filters the name out of officials to make officials[name] 
-electeds=[]
-for electedID,electedDict in repDict['officials'].iteritems():
-	if electedID in officialIDs:
-		electeds.append(electedDict.get('name').encode('utf-8'))
-"""
 
 #Filters the office id out of offices and gets offices[officialIds] 
 officials= {}
 for officesID,officesDict in repDict['offices'].iteritems():
 
-	if checkName(officesDict.get('name')):
+	if checkName(officesDict.get('name'),"stateLeg"):
 		officials[officesDict.get('name')]=officesDict.get('officialIds',[])		
 
-#Filters the name out of officials to make officials[name] 
-electeds=[]
-for electedID,electedDict in repDict['officials'].iteritems():
-	for name, officialIDs in officials.iteritems():
-		if electedID in officialIDs:
-			singleElected=[]
-			singleElected.append(name.encode('utf-8'))
-			singleElected.append(electedDict.get('name',"").encode('utf-8'))
-			singleElected.append(electedDict.get('photoUrl',"").encode('utf-8'))
-			singleElected.append(electedDict.get('party',"").encode('utf-8'))
-			singleElected.append(electedDict.get('phones',"")[0].encode('utf-8'))
-			singleElected.append(electedDict.get('urls',"")[0].encode('utf-8'))
-			for socialChannel in electedDict.get('channels',""):
-				#print socialChannel
-				for k,v in socialChannel.iteritems():
-					if v=="Facebook":
-						singleElected.append(socialChannel.get('id',"").encode('utf-8'))
-				for k,v in socialChannel.iteritems():
-					if v=="Twitter":
-						singleElected.append(socialChannel.get('id',"").encode('utf-8'))
-			print singleElected	
-
+#print deets(officials, repDict)
+htmlcode = HTML.table(deets(officials, repDict), header_row=['Office','Name','Photo','Party','Phone','Website','Facebook','Twitter'])
+print htmlcode
 
 
 
